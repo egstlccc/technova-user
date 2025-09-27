@@ -56,15 +56,8 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'dispute_replies',
-    timestamps: true,
-    indexes: [
-      {
-        fields: ['disputeId']
-      },
-      {
-        fields: ['replierType', 'replierId']
-      }
-    ]
+    timestamps: true
+    // Indexes are created via migration script
   });
 
   return DisputeReply;

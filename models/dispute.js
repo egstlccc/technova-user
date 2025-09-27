@@ -94,27 +94,8 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'disputes',
     timestamps: true,
-    paranoid: true, // Soft delete
-    indexes: [
-      {
-        fields: ['complainantType', 'complainantId']
-      },
-      {
-        fields: ['respondentType', 'respondentId']
-      },
-      {
-        fields: ['status']
-      },
-      {
-        fields: ['priority']
-      },
-      {
-        fields: ['category']
-      },
-      {
-        fields: ['assignedAdminId']
-      }
-    ]
+    paranoid: true // Soft delete
+    // Indexes are created via migration script
   });
 
   return Dispute;

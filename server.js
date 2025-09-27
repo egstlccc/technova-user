@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 require('dotenv').config();
@@ -63,6 +63,10 @@ async function start() {
     // Authenticate & sync DB
     await sequelize.authenticate();
     console.log('Database connected!');
+    
+    // Run dispute tables migration first
+    const migrateDisputeTables = require('./migrate_dispute_tables');
+    await migrateDisputeTables();
     
     await sequelize.sync({ alter: true }); // safer than force, updates tables if needed
     console.log('Database synced!');
