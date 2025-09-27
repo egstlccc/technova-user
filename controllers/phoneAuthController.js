@@ -213,11 +213,15 @@ async function verifyOtp(req, res) {
 /**
  * Login with phone number (for already verified users)
  * POST /auth/login
- * Requires both access token and refresh token
+ * Requires both access token and refresh token in headers
  */
 async function loginWithPhone(req, res) {
   try {
-    const { phone, accessToken, refreshToken } = req.body;
+    const { phone } = req.body;
+    
+    // Get tokens from headers
+    const authHeader = req.headers.authorization;
+    const refreshTokenHeader = req.headers['x-refresh-token'];
 
     if (!phone) {
       return res.status(400).json({
@@ -226,12 +230,18 @@ async function loginWithPhone(req, res) {
       });
     }
 
-    if (!accessToken || !refreshToken) {
+    if (!authHeader || !refreshTokenHeader) {
       return res.status(400).json({
         success: false,
-        message: 'Access token and refresh token are required'
+        message: 'Authorization header and X-Refresh-Token header are required'
       });
     }
+
+    // Extract token from "Bearer <token>" format
+    const accessToken = authHeader.startsWith('Bearer ') 
+      ? authHeader.slice(7) 
+      : authHeader;
+    const refreshToken = refreshTokenHeader;
 
     if (!isValidPhoneNumber(phone)) {
       return res.status(400).json({

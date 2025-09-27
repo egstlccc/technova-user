@@ -94,10 +94,14 @@
               "name": "Login with Phone (After OTP)",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Refresh-Token", "value": "{{refreshToken}}" }
+                ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+251912345678\",\n  \"accessToken\": \"{{token}}\",\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                  "raw": "{\n  \"phone\": \"+251912345678\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/auth/login",
