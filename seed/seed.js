@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const { sequelize } = require('../config/database');
 const { models } = require('../models');
 const { hashPassword } = require('../utils/password');
@@ -28,15 +28,25 @@ const [superAdminRole] = await models.Role.findOrCreate({ where: { name: 'supera
 // Fix RolePermissions table structure if needed
 const qi = sequelize.getQueryInterface();
 const rolePermDesc = await qi.describeTable('RolePermissions');
-if (!rolePermDesc.RoleId) {
-  await qi.addColumn('RolePermissions', 'RoleId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'roles', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added RoleId column to RolePermissions');
+const hasRolePermRoleId = rolePermDesc.RoleId || rolePermDesc.roleId || rolePermDesc.role_id;
+
+if (!hasRolePermRoleId) {
+  try {
+    await qi.addColumn('RolePermissions', 'RoleId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'roles', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added RoleId column to RolePermissions');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('RoleId column already exists in RolePermissions, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
 
 // Attach all permissions to superadmin
@@ -54,25 +64,44 @@ defaults: { fullName: 'Root Admin', username, password: await hashPassword('admi
 
 // Fix AdminRoles table structure if needed
 const adminRoleDesc = await qi.describeTable('AdminRoles');
-if (!adminRoleDesc.AdminId) {
-  await qi.addColumn('AdminRoles', 'AdminId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'admins', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added AdminId column to AdminRoles');
+const hasAdminId = adminRoleDesc.AdminId || adminRoleDesc.adminId || adminRoleDesc.admin_id;
+const hasRoleId = adminRoleDesc.RoleId || adminRoleDesc.roleId || adminRoleDesc.role_id;
+
+if (!hasAdminId) {
+  try {
+    await qi.addColumn('AdminRoles', 'AdminId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'admins', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added AdminId column to AdminRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('AdminId column already exists, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
-if (!adminRoleDesc.RoleId) {
-  await qi.addColumn('AdminRoles', 'RoleId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'roles', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added RoleId column to AdminRoles');
+if (!hasRoleId) {
+  try {
+    await qi.addColumn('AdminRoles', 'RoleId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'roles', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added RoleId column to AdminRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('RoleId column already exists, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
 
 // If AdminRoles has timestamps, recreate it without them
@@ -100,71 +129,128 @@ if (adminRoleDesc.created_at || adminRoleDesc.updated_at) {
 
 // Fix PassengerRoles table structure if needed
 const passengerRoleDesc = await qi.describeTable('PassengerRoles');
-if (!passengerRoleDesc.PassengerId) {
-  await qi.addColumn('PassengerRoles', 'PassengerId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'passengers', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added PassengerId column to PassengerRoles');
+const hasPassengerId = passengerRoleDesc.PassengerId || passengerRoleDesc.passengerId || passengerRoleDesc.passenger_id;
+const hasPassengerRoleId = passengerRoleDesc.RoleId || passengerRoleDesc.roleId || passengerRoleDesc.role_id;
+
+if (!hasPassengerId) {
+  try {
+    await qi.addColumn('PassengerRoles', 'PassengerId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'passengers', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added PassengerId column to PassengerRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('PassengerId column already exists in PassengerRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
-if (!passengerRoleDesc.RoleId) {
-  await qi.addColumn('PassengerRoles', 'RoleId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'roles', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added RoleId column to PassengerRoles');
+if (!hasPassengerRoleId) {
+  try {
+    await qi.addColumn('PassengerRoles', 'RoleId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'roles', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added RoleId column to PassengerRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('RoleId column already exists in PassengerRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
 
 // Fix DriverRoles table structure if needed
 const driverRoleDesc = await qi.describeTable('DriverRoles');
-if (!driverRoleDesc.DriverId) {
-  await qi.addColumn('DriverRoles', 'DriverId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'drivers', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added DriverId column to DriverRoles');
+const hasDriverId = driverRoleDesc.DriverId || driverRoleDesc.driverId || driverRoleDesc.driver_id;
+const hasDriverRoleId = driverRoleDesc.RoleId || driverRoleDesc.roleId || driverRoleDesc.role_id;
+
+if (!hasDriverId) {
+  try {
+    await qi.addColumn('DriverRoles', 'DriverId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'drivers', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added DriverId column to DriverRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('DriverId column already exists in DriverRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
-if (!driverRoleDesc.RoleId) {
-  await qi.addColumn('DriverRoles', 'RoleId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'roles', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added RoleId column to DriverRoles');
+if (!hasDriverRoleId) {
+  try {
+    await qi.addColumn('DriverRoles', 'RoleId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'roles', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added RoleId column to DriverRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('RoleId column already exists in DriverRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
 
 // Fix StaffRoles table structure if needed
 const staffRoleDesc = await qi.describeTable('StaffRoles');
-if (!staffRoleDesc.StaffId) {
-  await qi.addColumn('StaffRoles', 'StaffId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'staff', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added StaffId column to StaffRoles');
+const hasStaffId = staffRoleDesc.StaffId || staffRoleDesc.staffId || staffRoleDesc.staff_id;
+const hasStaffRoleId = staffRoleDesc.RoleId || staffRoleDesc.roleId || staffRoleDesc.role_id;
+
+if (!hasStaffId) {
+  try {
+    await qi.addColumn('StaffRoles', 'StaffId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'staff', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added StaffId column to StaffRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('StaffId column already exists in StaffRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
-if (!staffRoleDesc.RoleId) {
-  await qi.addColumn('StaffRoles', 'RoleId', {
-    type: require('sequelize').DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'roles', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  });
-  console.log('Added RoleId column to StaffRoles');
+if (!hasStaffRoleId) {
+  try {
+    await qi.addColumn('StaffRoles', 'RoleId', {
+      type: require('sequelize').DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'roles', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    });
+    console.log('Added RoleId column to StaffRoles');
+  } catch (error) {
+    if (error.message.includes('Duplicate column name')) {
+      console.log('RoleId column already exists in StaffRoles, skipping...');
+    } else {
+      throw error;
+    }
+  }
 }
 
 // Attach superadmin role to admin
