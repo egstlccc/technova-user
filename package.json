@@ -9,7 +9,7 @@
     "dev": "nodemon server.js",
     "seed": "node .\\\\seed\\\\seed.js",
     "migrate": "node .\\seed\\migrate.js",
-    "migrate:disputes": "node run_migration.js"
+    "migrate:disputes": "node seed/run_migration.js"
   },
   "keywords": [],
   "author": "",

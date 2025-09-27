@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { sequelize } = require('./config/database');
+const { sequelize } = require('../config/database');
 const migrateDisputeTables = require('./migrate_dispute_tables');
 
 async function runMigration() {

@@ -65,7 +65,7 @@ async function start() {
     console.log('Database connected!');
     
     // Run dispute tables migration first
-    const migrateDisputeTables = require('./migrate_dispute_tables');
+    const migrateDisputeTables = require('./seed/migrate_dispute_tables');
     await migrateDisputeTables();
     
     await sequelize.sync({ alter: true }); // safer than force, updates tables if needed
