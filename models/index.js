@@ -8,7 +8,6 @@ const RoleModel = require('./role');
 const PermissionModel = require('./permission');
 const AdminModel = require('./admin');
 const OtpModel = require('./otp');
-const PasswordResetTokenModel = require('./passwordResetToken');
 
 const Passenger = PassengerModel(sequelize, DataTypes);
 const Driver = DriverModel(sequelize, DataTypes);
@@ -17,7 +16,6 @@ const Role = RoleModel(sequelize, DataTypes);
 const Permission = PermissionModel(sequelize, DataTypes);
 const Admin = AdminModel(sequelize, DataTypes);
 const Otp = OtpModel(sequelize, DataTypes);
-const PasswordResetToken = PasswordResetTokenModel(sequelize, DataTypes);
 
 // Roles and permissions (explicit FK names to match existing schema)
 Role.belongsToMany(Permission, {
@@ -91,5 +89,5 @@ sequelize,
 Sequelize,
 DataTypes,
 Op,
-models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp, PasswordResetToken },
+models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp },
 };

@@ -29,8 +29,7 @@ This is the backend API for the RideShare application, built using Express.js an
 ## Features
 
 - User registration and authentication (Passenger, Driver, Staff, Admin)
-- **Email-based password reset functionality for passengers**
-- **Password change functionality for authenticated passengers**
+- **Password update and reset functionality for email-based registered passengers**
 - Role and permission-based access control (RBAC)
 - Passenger profile management, including self-delete
 - Driver document uploads and approval workflow (pending/approved/rejected)
@@ -47,7 +46,6 @@ This is the backend API for the RideShare application, built using Express.js an
 - MySQL / Sequelize ORM
 - JWT Authentication
 - Multer (file uploads)
-- Nodemailer (email functionality)
 - Postman (collection provided)
 
 ---
@@ -87,12 +85,6 @@ PORT=4000
 # Enable Sequelize SQL logs (true/false)
 SEQ_LOG=false
 
-# Email Configuration (for password reset functionality)
-EMAIL_SERVICE=gmail
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-FRONTEND_URL=http://localhost:3000
-
 # SMS Configuration (for OTP functionality)
 GEEZSMS_TOKEN=your-geezsms-token
 ```
@@ -121,10 +113,6 @@ The server starts at http://localhost:PORT (default 3000). All APIs are mounted 
 - JWT_SECRET: Secret for JWT signing
 - PORT: Server port (default 3000)
 - SEQ_LOG: Enable Sequelize logging (true/false)
-- EMAIL_SERVICE: Email service provider (default: gmail)
-- EMAIL_USER: Email address for sending emails
-- EMAIL_PASS: Email password or app password
-- FRONTEND_URL: Frontend URL for password reset links
 - GEEZSMS_TOKEN: Token for SMS OTP functionality
 
 ---
@@ -134,15 +122,12 @@ The server starts at http://localhost:PORT (default 3000). All APIs are mounted 
 - On server start, `sequelize.sync({ alter: true })` will auto-create/update tables, including:
   - `passengers.contract_id`
   - `wallets` table and relations
-  - `password_reset_tokens` table (for password reset functionality)
 
 Optional manual scripts:
 
 ```bash
 # Run migration helper
 npm run migrate
-# Run password reset tokens migration
-node migrate_password_reset_tokens.js
 # Seed roles/permissions/superadmin
 npm run seed
 ```
@@ -158,8 +143,7 @@ Base URL: `http://localhost:PORT/api`
 ### Auth
 - POST `/auth/passenger/register`
 - POST `/auth/passenger/login`
-- POST `/auth/passenger/forgot-password` - Request password reset email
-- POST `/auth/passenger/reset-password` - Reset password with token
+- POST `/auth/passenger/reset-password` - Reset password with current password verification
 - POST `/auth/driver/register`
 - POST `/auth/driver/login`
 - POST `/auth/staff/login`
@@ -202,35 +186,25 @@ GET /api/passengers/profile/me
 Authorization: Bearer <JWT>
 ```
 
-#### Password Reset (Email-based)
-- POST `/auth/passenger/forgot-password` — Request password reset email
-- POST `/auth/passenger/reset-password` — Reset password with token
+#### Password Management
+- POST `/auth/passenger/reset-password` — Reset password with current password verification
+- POST `/passengers/update-password` — Update password (requires authentication)
 
-Example: Request password reset
-```http
-POST /api/auth/passenger/forgot-password
-Content-Type: application/json
-
-{ "email": "user@example.com" }
-```
-
-Example: Reset password with token
+Example: Reset password (no authentication required)
 ```http
 POST /api/auth/passenger/reset-password
 Content-Type: application/json
 
 { 
-  "token": "reset-token-from-email", 
+  "email": "user@example.com",
+  "currentPassword": "oldpassword", 
   "newPassword": "newpassword123" 
 }
 ```
 
-#### Change Password (Authenticated)
-- POST `/passengers/change-password` — Change password (requires authentication)
-
-Example: Change password
+Example: Update password (requires authentication)
 ```http
-POST /api/passengers/change-password
+POST /api/passengers/update-password
 Authorization: Bearer <JWT>
 Content-Type: application/json
 
@@ -250,7 +224,7 @@ Content-Type: application/json
 - GET `/passengers/profile/me`
 - PUT `/passengers/profile/me`
 - DELETE `/passengers/profile/me` (delete own account)
-- POST `/passengers/change-password` - Change password (requires current password)
+- POST `/passengers/update-password` - Update password (requires current password)
 - POST `/passengers/rate-driver/:driverId`
 
 ### Drivers (admin)

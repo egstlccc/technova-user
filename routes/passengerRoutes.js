@@ -17,7 +17,7 @@ router.put('/profile/me', auth(), ctrl.updateMyProfile);
 router.delete('/profile/me', auth(), ctrl.deleteMyAccount);
 
 // Password management
-router.post('/change-password', auth(), ctrl.changePassword);
+router.post('/update-password', auth(), ctrl.updatePassword);
 
 // Passenger action: rate driver
 router.post('/rate-driver/:driverId', auth(), ctrl.rateDriver);

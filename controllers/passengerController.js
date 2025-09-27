@@ -100,5 +100,5 @@ return res.json({ message: 'Driver rated successfully', driver: updatedDriver, r
 };
 
 // Password management - delegate to auth controller
-exports.changePassword = authController.changePassword;
+exports.updatePassword = authController.updatePassword;
 
