@@ -68,8 +68,31 @@ async function start() {
     const migrateDisputeTables = require('./seed/migrate_dispute_tables');
     await migrateDisputeTables();
     
-    await sequelize.sync({ alter: true }); // safer than force, updates tables if needed
-    console.log('Database synced!');
+    // Check if main tables exist to determine sync strategy
+    const qi = sequelize.getQueryInterface();
+    const existingTables = await qi.showAllTables();
+    const hasMainTables = existingTables.some(table => 
+      ['admins', 'passengers', 'drivers', 'roles', 'permissions'].includes(table.tableName)
+    );
+    
+    if (hasMainTables) {
+      console.log('Main tables exist, skipping sync to avoid column conflicts...');
+      console.log('Database schema is ready!');
+    } else {
+      console.log('Fresh database detected, running initial sync...');
+      try {
+        await sequelize.sync({ alter: true });
+        console.log('Database synced!');
+      } catch (syncError) {
+        if (syncError.message.includes('Duplicate column name')) {
+          console.log('Some columns already exist, continuing with existing schema...');
+          await sequelize.sync({ force: false });
+          console.log('Database tables verified!');
+        } else {
+          throw syncError;
+        }
+      }
+    }
 
     app.listen(port, () =>
       console.log(`Server running on http://localhost:${port}`)
