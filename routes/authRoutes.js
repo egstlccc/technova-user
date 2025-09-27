@@ -15,8 +15,7 @@ router.post('/driver/verify-otp', rateLimit({ windowMs: 60_000, max: 20 }), ctrl
 // Password reset via OTP
 router.post('/passenger/password/reset/request', rateLimit({ windowMs: 60_000, max: 5 }), pwd.requestPassengerPasswordReset);
 router.post('/passenger/password/reset/verify', rateLimit({ windowMs: 60_000, max: 10 }), pwd.verifyPassengerPasswordReset);
-router.post('/driver/password/reset/request', rateLimit({ windowMs: 60_000, max: 5 }), pwd.requestDriverPasswordReset);
-router.post('/driver/password/reset/verify', rateLimit({ windowMs: 60_000, max: 10 }), pwd.verifyDriverPasswordReset);
+// Driver password reset is not OTP-based per requirements (removed)
 
 router.post('/staff/login', rateLimit({ windowMs: 60_000, max: 20 }), ctrl.loginStaff);
 

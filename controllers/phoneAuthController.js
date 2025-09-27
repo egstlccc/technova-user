@@ -161,9 +161,10 @@ async function verifyOtp(req, res) {
         phoneNumber: normalizedPhone
       });
 
-      // Generate access + refresh tokens for Passenger
+      // Mark as OTP-registered and issue tokens
+      try { passenger.otpRegistered = true; await passenger.save(); } catch (_) {}
       const access_token = generateAccessToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
-      const { token: refresh_token } = await issueRefreshToken({ userType: 'passenger', userId: passenger.id });
+      const { token: refresh_token } = await issueRefreshToken({ userType: 'passenger', userId: passenger.id, metadata: { otpRegistered: true } });
 
       return res.status(200).json({
         success: true,
@@ -379,6 +380,7 @@ async function refreshAccessToken(req, res) {
     const passenger = await models.Passenger.findByPk(matched.userId);
     if (!passenger) return res.status(404).json({ success: false, message: 'Passenger not found' });
 
+    if (!passenger.otpRegistered) return res.status(403).json({ success: false, message: 'Refresh not allowed. Passenger not OTP-registered.' });
     const access_token = generateAccessToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
     return res.status(200).json({ success: true, access_token, refresh_token: rotated.newToken });
   } catch (error) {
