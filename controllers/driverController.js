@@ -98,6 +98,23 @@ return res.json(updated);
 } catch (e) { return res.status(500).json({ message: e.message }); }
 };
 
+// Driver: change password (authenticated)
+exports.changeMyPassword = async (req, res) => {
+try {
+if (req.user.type !== 'driver') return res.status(403).json({ message: 'Only drivers can access this endpoint' });
+const { currentPassword, newPassword } = req.body || {};
+if (!currentPassword || !newPassword) return res.status(400).json({ message: 'currentPassword and newPassword are required' });
+const driver = await models.Driver.unscoped().findByPk(req.user.id);
+if (!driver) return res.status(404).json({ message: 'Driver not found' });
+const { comparePassword, hashPassword } = require('../utils/password');
+const ok = await comparePassword(currentPassword, driver.password);
+if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
+const hashed = await hashPassword(newPassword);
+await models.Driver.update({ password: hashed }, { where: { id: driver.id } });
+return res.json({ message: 'Password changed successfully' });
+} catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
 exports.toggleMyAvailability = async (req, res) => {
 try {
 if (req.user.type !== 'driver') return res.status(403).json({ message: 'Only drivers can toggle availability' });

@@ -10,6 +10,7 @@ wallet: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 0 },
 rating: { type: DataTypes.FLOAT, defaultValue: 5.0 },
 rewardPoints: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 emergencyContacts: { type: DataTypes.TEXT, allowNull: true },
+otpRegistered: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 }, { defaultScope: { attributes: { exclude: ['password'] } }, tableName: 'passengers', underscored: true });
 return Passenger;
 };

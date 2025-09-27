@@ -57,7 +57,15 @@ const data = { ...req.body };
 // Prevent passengers from updating any rating-related fields
 if ('rating' in data) delete data.rating;
 if ('ratingCount' in data) delete data.ratingCount;
-if (data.password) data.password = await hashPassword(data.password);
+// Disallow password updates for OTP-registered passengers
+if (data.password) {
+  if (existing.otpRegistered) {
+    delete data.password;
+  } else {
+    const { hashPassword } = require('../utils/password');
+    data.password = await hashPassword(data.password);
+  }
+}
 const [count] = await models.Passenger.update(data, { where: { id: req.user.id } });
 if (!count) return res.status(404).json({ message: 'Passenger not found' });
 const updated = await models.Passenger.findByPk(req.user.id);
