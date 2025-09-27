@@ -213,15 +213,23 @@ async function verifyOtp(req, res) {
 /**
  * Login with phone number (for already verified users)
  * POST /auth/login
+ * Requires both access token and refresh token
  */
 async function loginWithPhone(req, res) {
   try {
-    const { phone } = req.body;
+    const { phone, accessToken, refreshToken } = req.body;
 
     if (!phone) {
       return res.status(400).json({
         success: false,
         message: 'Phone number is required'
+      });
+    }
+
+    if (!accessToken || !refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Access token and refresh token are required'
       });
     }
 
@@ -244,11 +252,65 @@ async function loginWithPhone(req, res) {
       });
     }
 
-    // Do not issue new tokens at login; tokens are issued at OTP verification
+    // Verify access token
+    try {
+      const { generateAccessToken, verifyToken } = require('../utils/jwt');
+      const decoded = verifyToken(accessToken);
+      
+      if (decoded.id !== passenger.id) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid access token for this user'
+        });
+      }
+    } catch (tokenError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired access token'
+      });
+    }
+
+    // Verify refresh token exists in database
+    try {
+      const { compareHashedToken } = require('../utils/jwt');
+      const refreshTokens = await models.RefreshToken.findAll({ 
+        where: { 
+          userType: 'passenger', 
+          userId: passenger.id, 
+          revokedAt: null 
+        } 
+      });
+      
+      let validRefreshToken = false;
+      for (const rt of refreshTokens) {
+        if (await compareHashedToken(refreshToken, rt.hashedToken)) {
+          if (new Date(rt.expiresAt) > new Date()) {
+            validRefreshToken = true;
+            break;
+          }
+        }
+      }
+      
+      if (!validRefreshToken) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired refresh token'
+        });
+      }
+    } catch (refreshError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Login successful with valid tokens
     return res.status(200).json({
       success: true,
-      message: 'Login successful. Use tokens obtained during OTP verification.',
-      passenger: { id: passenger.id, phone: passenger.phone }
+      message: 'Login successful with valid tokens.',
+      passenger: { id: passenger.id, phone: passenger.phone },
+      token: accessToken,
+      refreshToken: refreshToken
     });
   } catch (error) {
     console.error('Login error:', error);
