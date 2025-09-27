@@ -299,26 +299,7 @@
           ],
           "response": []
         },
-        {
-          "name": "Passenger Password Reset - Request",
-          "request": {
-            "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+251912345678\"\n}" },
-            "url": { "raw": "{{baseUrl}}/auth/passenger/password/reset/request", "host": ["{{baseUrl}}"], "path": ["auth","passenger","password","reset","request"] }
-          },
-          "response": []
-        },
-        {
-          "name": "Passenger Password Reset - Verify",
-          "request": {
-            "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+251912345678\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"Passw0rd!\"\n}" },
-            "url": { "raw": "{{baseUrl}}/auth/passenger/password/reset/verify", "host": ["{{baseUrl}}"], "path": ["auth","passenger","password","reset","verify"] }
-          },
-          "response": []
-        },
+        
         {
           "name": "Passenger Login (Phone OTP)",
           "event": [
@@ -1560,24 +1541,33 @@
       ]
     },
     {
-      "name": "Password Management",
+      "name": "Driver",
       "item": [
         {
-          "name": "Passenger Change Password",
-          "request": {
-            "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{authToken}}" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"OldPass1!\",\n  \"newPassword\": \"NewPass1!\"\n}" },
-            "url": { "raw": "{{baseUrl}}/passengers/profile/me/change-password", "host": ["{{baseUrl}}"], "path": ["passengers","profile","me","change-password"] }
-          }
-        },
-        {
-          "name": "Driver Change Password",
+          "name": "Change Password (Driver)",
           "request": {
             "method": "POST",
             "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{authToken}}" } ],
             "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"OldPass1!\",\n  \"newPassword\": \"NewPass1!\"\n}" },
             "url": { "raw": "{{baseUrl}}/drivers/profile/me/change-password", "host": ["{{baseUrl}}"], "path": ["drivers","profile","me","change-password"] }
+          }
+        },
+        {
+          "name": "Password Reset Request (Driver Email)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"driver@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/driver/password/reset/request", "host": ["{{baseUrl}}"], "path": ["auth","driver","password","reset","request"] }
+          }
+        },
+        {
+          "name": "Password Reset Confirm (Driver Email)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{driverResetToken}}\",\n  \"newPassword\": \"NewPass1!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/driver/password/reset/confirm", "host": ["{{baseUrl}}"], "path": ["auth","driver","password","reset","confirm"] }
           }
         }
       ]

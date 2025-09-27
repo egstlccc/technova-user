@@ -14,7 +14,6 @@ router.delete('/:id', auth(), requirePermissions('passenger:delete'), ctrl.remov
 // Passenger self-control routes
 router.get('/profile/me', auth(), ctrl.getMyProfile);
 router.put('/profile/me', auth(), ctrl.updateMyProfile);
-router.post('/profile/me/change-password', auth(), ctrl.changeMyPassword);
 router.delete('/profile/me', auth(), ctrl.deleteMyAccount);
 
 // Passenger action: rate driver

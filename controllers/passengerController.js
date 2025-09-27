@@ -57,27 +57,19 @@ const data = { ...req.body };
 // Prevent passengers from updating any rating-related fields
 if ('rating' in data) delete data.rating;
 if ('ratingCount' in data) delete data.ratingCount;
-if (data.password) data.password = await hashPassword(data.password);
+// Disallow password updates for OTP-registered passengers
+if (data.password) {
+  if (existing.otpRegistered) {
+    delete data.password;
+  } else {
+    const { hashPassword } = require('../utils/password');
+    data.password = await hashPassword(data.password);
+  }
+}
 const [count] = await models.Passenger.update(data, { where: { id: req.user.id } });
 if (!count) return res.status(404).json({ message: 'Passenger not found' });
 const updated = await models.Passenger.findByPk(req.user.id);
 return res.json(updated);
-} catch (e) { return res.status(500).json({ message: e.message }); }
-};
-
-// Passenger: change password (authenticated)
-exports.changeMyPassword = async (req, res) => {
-try {
-const { currentPassword, newPassword } = req.body || {};
-if (!currentPassword || !newPassword) return res.status(400).json({ message: 'currentPassword and newPassword are required' });
-const passenger = await models.Passenger.unscoped().findByPk(req.user.id);
-if (!passenger) return res.status(404).json({ message: 'Passenger not found' });
-const { comparePassword, hashPassword } = require('../utils/password');
-const ok = await comparePassword(currentPassword, passenger.password);
-if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
-const hashed = await hashPassword(newPassword);
-await models.Passenger.update({ password: hashed }, { where: { id: passenger.id } });
-return res.json({ message: 'Password changed successfully' });
 } catch (e) { return res.status(500).json({ message: e.message }); }
 };
 

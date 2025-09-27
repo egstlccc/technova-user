@@ -1,6 +1,7 @@
 const { models } = require('../models');
 const { hashPassword, comparePassword } = require('../utils/password');
 const createAdvancedOtpUtil = require('../utils/createAdvancedOtpUtil');
+const crypto = require('crypto');
 
 const otpUtil = createAdvancedOtpUtil({
   token: process.env.GEEZSMS_TOKEN,
@@ -18,37 +19,48 @@ function normalizePhone(phone) {
   return phone;
 }
 
-// Passenger: request password reset (via OTP to phone)
-exports.requestPassengerPasswordReset = async (req, res) => {
+// Passenger password reset/update not applicable for OTP-registered users per requirements
+
+function addMinutes(date, minutes) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() + minutes);
+  return d;
+}
+
+// Driver: request password reset via email token
+exports.requestDriverPasswordResetEmail = async (req, res) => {
   try {
-    const { phone } = req.body || {};
-    if (!phone) return res.status(400).json({ message: 'phone is required' });
-    const normalizedPhone = normalizePhone(phone);
-    const passenger = await models.Passenger.findOne({ where: { phone: normalizedPhone } });
-    if (!passenger) return res.status(404).json({ message: 'Passenger not found' });
-    const resp = await otpUtil.generateAndSendOtp({ referenceType: 'Passenger', referenceId: passenger.id, phoneNumber: normalizedPhone });
-    return res.status(200).json({ message: 'OTP sent', phoneNumber: normalizedPhone, expiresIn: resp.expiresIn });
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ message: 'email is required' });
+    const driver = await models.Driver.findOne({ where: { email } });
+    if (!driver) return res.status(404).json({ message: 'Driver not found' });
+    const token = crypto.randomBytes(24).toString('hex');
+    const expiresAt = addMinutes(new Date(), 30);
+    await models.PasswordResetToken.create({ userType: 'driver', userId: driver.id, token, expiresAt });
+    // TODO: Integrate real email service; for now return token for testing
+    return res.status(200).json({ message: 'Password reset email sent', token, expiresInMinutes: 30 });
   } catch (e) {
     return res.status(500).json({ message: e.message });
   }
 };
 
-// Passenger: verify reset OTP and set new password
-exports.verifyPassengerPasswordReset = async (req, res) => {
+// Driver: confirm password reset via email token
+exports.confirmDriverPasswordResetEmail = async (req, res) => {
   try {
-    const { phone, otp, newPassword } = req.body || {};
-    if (!phone || !otp || !newPassword) return res.status(400).json({ message: 'phone, otp and newPassword are required' });
-    const normalizedPhone = normalizePhone(phone);
-    const passenger = await models.Passenger.unscoped().findOne({ where: { phone: normalizedPhone } });
-    if (!passenger) return res.status(404).json({ message: 'Passenger not found' });
-    await otpUtil.verifyOtp({ referenceType: 'Passenger', referenceId: passenger.id, token: otp, phoneNumber: normalizedPhone });
+    const { token, newPassword } = req.body || {};
+    if (!token || !newPassword) return res.status(400).json({ message: 'token and newPassword are required' });
+    const row = await models.PasswordResetToken.findOne({ where: { token, userType: 'driver', usedAt: null } });
+    if (!row) return res.status(400).json({ message: 'Invalid token' });
+    if (new Date(row.expiresAt) < new Date()) return res.status(400).json({ message: 'Token expired' });
+    const driver = await models.Driver.unscoped().findByPk(row.userId);
+    if (!driver) return res.status(404).json({ message: 'Driver not found' });
     const hashed = await hashPassword(newPassword);
-    await models.Passenger.update({ password: hashed }, { where: { id: passenger.id } });
-    return res.status(200).json({ message: 'Password updated successfully' });
+    await models.Driver.update({ password: hashed }, { where: { id: driver.id } });
+    row.usedAt = new Date();
+    await row.save();
+    return res.status(200).json({ message: 'Password reset successfully' });
   } catch (e) {
-    const msg = e?.message || 'Verification failed';
-    const code = /expired|Invalid|No valid|locked/i.test(msg) ? 400 : 500;
-    return res.status(code).json({ message: msg });
+    return res.status(500).json({ message: e.message });
   }
 };
 
