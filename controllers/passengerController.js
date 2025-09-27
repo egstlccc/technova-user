@@ -1,5 +1,6 @@
 const { models } = require('../models');
 const { hashPassword } = require('../utils/password');
+const authController = require('./authController');
 
 exports.create = async (req, res) => {
 try {
@@ -97,4 +98,7 @@ const updatedDriver = await models.Driver.findByPk(driverId);
 return res.json({ message: 'Driver rated successfully', driver: updatedDriver, rating: newRating, comment });
 } catch (e) { return res.status(500).json({ message: e.message }); }
 };
+
+// Password management - delegate to auth controller
+exports.changePassword = authController.changePassword;
 

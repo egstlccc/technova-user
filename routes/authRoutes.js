@@ -1,10 +1,12 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/authController');
 const rateLimit = require('../middleware/rateLimit');
 
 router.post('/passenger/register', rateLimit({ windowMs: 60_000, max: 10 }), ctrl.registerPassenger);
 router.post('/passenger/login', rateLimit({ windowMs: 60_000, max: 20 }), ctrl.loginPassenger);
+router.post('/passenger/forgot-password', rateLimit({ windowMs: 60_000, max: 5 }), ctrl.forgotPassword);
+router.post('/passenger/reset-password', rateLimit({ windowMs: 60_000, max: 5 }), ctrl.resetPassword);
 
 router.post('/driver/register', rateLimit({ windowMs: 60_000, max: 10 }), ctrl.registerDriver);
 router.post('/driver/login', rateLimit({ windowMs: 60_000, max: 20 }), ctrl.loginDriver);

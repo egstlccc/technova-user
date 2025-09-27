@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/passengerController');
 const auth = require('../middleware/auth');
@@ -15,6 +15,9 @@ router.delete('/:id', auth(), requirePermissions('passenger:delete'), ctrl.remov
 router.get('/profile/me', auth(), ctrl.getMyProfile);
 router.put('/profile/me', auth(), ctrl.updateMyProfile);
 router.delete('/profile/me', auth(), ctrl.deleteMyAccount);
+
+// Password management
+router.post('/change-password', auth(), ctrl.changePassword);
 
 // Passenger action: rate driver
 router.post('/rate-driver/:driverId', auth(), ctrl.rateDriver);

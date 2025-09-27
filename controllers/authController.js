@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { models } = require('../models');
 const { hashPassword, comparePassword } = require('../utils/password');
+const { sendPasswordResetEmail, sendPasswordChangeConfirmation } = require('../utils/email');
 require('dotenv').config();
 
 /* ---------------------- JWT ---------------------- */
@@ -325,5 +327,173 @@ exports.loginAdmin = async (req, res) => {
     return res.json({ token, admin: cleanAdmin });
   } catch (e) {
     return res.status(500).json({ message: e.message });
+  }
+};
+
+/* ========================= PASSWORD RESET ========================= */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Find passenger by email
+    const passenger = await models.Passenger.findOne({ where: { email } });
+    if (!passenger) {
+      // For security, don't reveal if email exists or not
+      return res.status(200).json({ 
+        message: 'If the email exists, a password reset link has been sent' 
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Store reset token in database
+    await models.PasswordResetToken.create({
+      token: resetToken,
+      email: email,
+      expiresAt: expiresAt,
+      used: false
+    });
+
+    // Send reset email
+    const emailResult = await sendPasswordResetEmail(email, resetToken, passenger.name);
+    
+    if (!emailResult.success) {
+      console.error('Failed to send password reset email:', emailResult.error);
+      return res.status(500).json({ 
+        message: 'Failed to send password reset email. Please try again later.' 
+      });
+    }
+
+    return res.status(200).json({ 
+      message: 'If the email exists, a password reset link has been sent' 
+    });
+  } catch (e) {
+    console.error('Forgot password error:', e);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Token and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Find valid reset token
+    const resetToken = await models.PasswordResetToken.findOne({
+      where: {
+        token: token,
+        used: false,
+        expiresAt: {
+          [models.Sequelize.Op.gt]: new Date() // Not expired
+        }
+      }
+    });
+
+    if (!resetToken) {
+      return res.status(400).json({ 
+        message: 'Invalid or expired reset token' 
+      });
+    }
+
+    // Find passenger by email
+    const passenger = await models.Passenger.findOne({ 
+      where: { email: resetToken.email } 
+    });
+    
+    if (!passenger) {
+      return res.status(404).json({ message: 'Passenger not found' });
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update passenger password
+    await models.Passenger.update(
+      { password: hashedPassword },
+      { where: { id: passenger.id } }
+    );
+
+    // Mark token as used
+    await models.PasswordResetToken.update(
+      { used: true },
+      { where: { id: resetToken.id } }
+    );
+
+    // Send confirmation email
+    await sendPasswordChangeConfirmation(passenger.email, passenger.name);
+
+    return res.status(200).json({ 
+      message: 'Password has been reset successfully' 
+    });
+  } catch (e) {
+    console.error('Reset password error:', e);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const passengerId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Current password and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: 'New password must be at least 6 characters long' 
+      });
+    }
+
+    // Find passenger
+    const passenger = await models.Passenger.unscoped().findByPk(passengerId);
+    if (!passenger) {
+      return res.status(404).json({ message: 'Passenger not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(currentPassword, passenger.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    await models.Passenger.update(
+      { password: hashedPassword },
+      { where: { id: passengerId } }
+    );
+
+    // Send confirmation email
+    await sendPasswordChangeConfirmation(passenger.email, passenger.name);
+
+    return res.status(200).json({ 
+      message: 'Password has been changed successfully' 
+    });
+  } catch (e) {
+    console.error('Change password error:', e);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
