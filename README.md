@@ -80,6 +80,9 @@ DB_PASS=your_password
 DB_HOST=127.0.0.1
 DB_PORT=3306
 JWT_SECRET=change_me
+JWT_REFRESH_SECRET=your-refresh-secret-key
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=7d
 # If you use the provided Postman baseUrl (4000), set PORT=4000
 PORT=4000
 # Enable Sequelize SQL logs (true/false)
@@ -110,7 +113,10 @@ The server starts at http://localhost:PORT (default 3000). All APIs are mounted 
 - DB_PASS: Database password
 - DB_HOST: Database host (default 127.0.0.1)
 - DB_PORT: Database port (default 3306)
-- JWT_SECRET: Secret for JWT signing
+- JWT_SECRET: Secret for JWT access token signing
+- JWT_REFRESH_SECRET: Secret for JWT refresh token signing
+- ACCESS_TOKEN_EXPIRES_IN: Access token expiration time (default: 15m)
+- REFRESH_TOKEN_EXPIRES_IN: Refresh token expiration time (default: 7d)
 - PORT: Server port (default 3000)
 - SEQ_LOG: Enable Sequelize logging (true/false)
 - GEEZSMS_TOKEN: Token for SMS OTP functionality
@@ -152,8 +158,9 @@ Base URL: `http://localhost:PORT/api`
 
 #### Phone-based OTP (Passenger)
 - POST `/auth/request-otp` — request OTP using `{ "phone": "09XXXXXXXX" }`
-- POST `/auth/verify-otp` — verify using `{ "phone": "09XXXXXXXX", "otp": "123456" }` and receive JWT
-- POST `/auth/login` — login with `{ "phone": "09XXXXXXXX" }` (after verified) and receive JWT
+- POST `/auth/verify-otp` — verify using `{ "phone": "09XXXXXXXX", "otp": "123456" }` and receive access & refresh tokens
+- POST `/auth/login` — login with `{ "phone": "09XXXXXXXX" }` (after verified) and receive access & refresh tokens
+- POST `/auth/refresh-token` — refresh access token using refresh token
 
 Example: Request OTP
 ```http
@@ -163,7 +170,7 @@ Content-Type: application/json
 { "phone": "0912345678" }
 ```
 
-Example: Verify OTP (returns token)
+Example: Verify OTP (returns access and refresh tokens)
 ```http
 POST /api/auth/verify-otp
 Content-Type: application/json
@@ -176,14 +183,32 @@ Response
   "success": true,
   "message": "OTP verified successfully. Account activated.",
   "passenger": { "id": 1, "phone": "+251912345678" },
-  "token": "<JWT>"
+  "accessToken": "<ACCESS_TOKEN>",
+  "refreshToken": "<REFRESH_TOKEN>"
 }
 ```
 
-Use the token for self endpoints
+Example: Refresh access token
+```http
+POST /api/auth/refresh-token
+Content-Type: application/json
+
+{ "refreshToken": "<REFRESH_TOKEN>" }
+```
+Response
+```json
+{
+  "success": true,
+  "message": "Tokens refreshed successfully",
+  "accessToken": "<NEW_ACCESS_TOKEN>",
+  "refreshToken": "<NEW_REFRESH_TOKEN>"
+}
+```
+
+Use the access token for protected endpoints
 ```http
 GET /api/passengers/profile/me
-Authorization: Bearer <JWT>
+Authorization: Bearer <ACCESS_TOKEN>
 ```
 
 #### Password Management

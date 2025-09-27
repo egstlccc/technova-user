@@ -9,6 +9,7 @@ router.post('/verify-otp', phoneAuthController.verifyOtp);
 router.post('/passenger/register-phone', phoneAuthController.registerPassengerByPhone);
 router.post('/passenger/verify-otp', phoneAuthController.verifyPassengerOtpRedirect);
 router.post('/login', phoneAuthController.loginWithPhone);
+router.post('/refresh-token', phoneAuthController.refreshToken);
 
 // Protected routes (authentication required)
 router.get('/profile', authenticatePhoneUser, phoneAuthController.getUserProfile);

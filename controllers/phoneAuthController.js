@@ -1,5 +1,5 @@
 const { models } = require('../models');
-const { generateToken } = require('../utils/jwt');
+const { generateToken, generateTokenPair, verifyToken } = require('../utils/jwt');
 const { hashPassword } = require('../utils/password');
 const createAdvancedOtpUtil = require('../utils/createAdvancedOtpUtil');
 
@@ -161,8 +161,14 @@ async function verifyOtp(req, res) {
         phoneNumber: normalizedPhone
       });
 
-      // Generate JWT token for Passenger
-      const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+      // Generate access and refresh token pair for Passenger
+      const tokens = generateTokenPair({ 
+        id: passenger.id, 
+        type: 'passenger', 
+        phone: passenger.phone,
+        roles: [], 
+        permissions: [] 
+      });
 
       return res.status(200).json({
         success: true,
@@ -171,7 +177,8 @@ async function verifyOtp(req, res) {
           id: passenger.id,
           phone: passenger.phone
         },
-        token
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken
       });
     } catch (otpError) {
       // Handle OTP verification errors
@@ -244,8 +251,14 @@ async function loginWithPhone(req, res) {
       });
     }
 
-    // Generate JWT token for Passenger
-    const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+    // Generate access and refresh token pair for Passenger
+    const tokens = generateTokenPair({ 
+      id: passenger.id, 
+      type: 'passenger', 
+      phone: passenger.phone,
+      roles: [], 
+      permissions: [] 
+    });
 
     return res.status(200).json({
       success: true,
@@ -254,7 +267,8 @@ async function loginWithPhone(req, res) {
         id: passenger.id,
         phone: passenger.phone
       },
-      token
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -294,6 +308,65 @@ async function getUserProfile(req, res) {
     });
   } catch (error) {
     console.error('Get profile error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+/**
+ * Refresh access token using refresh token
+ * POST /auth/refresh-token
+ */
+async function refreshToken(req, res) {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key');
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    // Find passenger to ensure they still exist
+    const passenger = await models.Passenger.findByPk(decoded.id);
+    if (!passenger) {
+      return res.status(404).json({
+        success: false,
+        message: 'Passenger not found'
+      });
+    }
+
+    // Generate new token pair
+    const tokens = generateTokenPair({ 
+      id: passenger.id, 
+      type: 'passenger', 
+      phone: passenger.phone,
+      roles: [], 
+      permissions: [] 
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Tokens refreshed successfully',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -344,10 +417,23 @@ async function verifyPassengerOtpRedirect(req, res) {
       phoneNumber: normalizedPhone
     });
 
-    const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
-    const redirectUrl = '/api/passengers/profile/me?token=' + encodeURIComponent(token);
+    const tokens = generateTokenPair({ 
+      id: passenger.id, 
+      type: 'passenger', 
+      phone: passenger.phone,
+      roles: [], 
+      permissions: [] 
+    });
+    const redirectUrl = '/api/passengers/profile/me?token=' + encodeURIComponent(tokens.accessToken);
     res.set('Location', redirectUrl);
-    return res.status(302).json({ success: true, message: 'Verified', redirect: redirectUrl, token, passenger: { id: passenger.id, phone: passenger.phone } });
+    return res.status(302).json({ 
+      success: true, 
+      message: 'Verified', 
+      redirect: redirectUrl, 
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      passenger: { id: passenger.id, phone: passenger.phone } 
+    });
   } catch (error) {
     const message = error && error.message ? error.message : 'Verification failed';
     const status = /expired|Invalid|No valid/i.test(message) ? 400 : 500;
@@ -360,6 +446,7 @@ module.exports = {
   verifyOtp,
   loginWithPhone,
   getUserProfile,
+  refreshToken,
   registerPassengerByPhone,
   verifyPassengerOtpRedirect
 };
