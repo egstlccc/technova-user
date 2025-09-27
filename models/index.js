@@ -11,6 +11,8 @@ const OtpModel = require('./otp');
 const RefreshTokenModel = require('./refreshToken');
 const AppSettingsModel = require('./appSettings');
 const PasswordResetTokenModel = require('./passwordResetToken');
+const DisputeModel = require('./dispute');
+const DisputeReplyModel = require('./disputeReply');
 
 const Passenger = PassengerModel(sequelize, DataTypes);
 const Driver = DriverModel(sequelize, DataTypes);
@@ -22,6 +24,8 @@ const Otp = OtpModel(sequelize, DataTypes);
 const RefreshToken = RefreshTokenModel(sequelize, DataTypes);
 const AppSettings = AppSettingsModel(sequelize, DataTypes);
 const PasswordResetToken = PasswordResetTokenModel(sequelize, DataTypes);
+const Dispute = DisputeModel(sequelize, DataTypes);
+const DisputeReply = DisputeReplyModel(sequelize, DataTypes);
 
 // Roles and permissions (explicit FK names to match existing schema)
 Role.belongsToMany(Permission, {
@@ -90,10 +94,79 @@ Role.belongsToMany(Admin, {
   otherKey: { name: 'AdminId', field: 'AdminId' },
 });
 
+// Dispute associations
+Dispute.hasMany(DisputeReply, {
+  foreignKey: 'disputeId',
+  as: 'replies'
+});
+
+DisputeReply.belongsTo(Dispute, {
+  foreignKey: 'disputeId',
+  as: 'dispute'
+});
+
+// Dispute belongs to complainant (polymorphic)
+Dispute.belongsTo(Passenger, {
+  foreignKey: 'complainantId',
+  as: 'complainantPassenger',
+  constraints: false,
+  scope: { complainantType: 'passenger' }
+});
+
+Dispute.belongsTo(Driver, {
+  foreignKey: 'complainantId',
+  as: 'complainantDriver',
+  constraints: false,
+  scope: { complainantType: 'driver' }
+});
+
+// Dispute belongs to respondent (polymorphic)
+Dispute.belongsTo(Passenger, {
+  foreignKey: 'respondentId',
+  as: 'respondentPassenger',
+  constraints: false,
+  scope: { respondentType: 'passenger' }
+});
+
+Dispute.belongsTo(Driver, {
+  foreignKey: 'respondentId',
+  as: 'respondentDriver',
+  constraints: false,
+  scope: { respondentType: 'driver' }
+});
+
+// Dispute assigned to admin
+Dispute.belongsTo(Admin, {
+  foreignKey: 'assignedAdminId',
+  as: 'assignedAdmin'
+});
+
+// DisputeReply belongs to replier (polymorphic)
+DisputeReply.belongsTo(Passenger, {
+  foreignKey: 'replierId',
+  as: 'replierPassenger',
+  constraints: false,
+  scope: { replierType: 'passenger' }
+});
+
+DisputeReply.belongsTo(Driver, {
+  foreignKey: 'replierId',
+  as: 'replierDriver',
+  constraints: false,
+  scope: { replierType: 'driver' }
+});
+
+DisputeReply.belongsTo(Admin, {
+  foreignKey: 'replierId',
+  as: 'replierAdmin',
+  constraints: false,
+  scope: { replierType: 'admin' }
+});
+
 module.exports = {
 sequelize,
 Sequelize,
 DataTypes,
 Op,
-models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp, RefreshToken, AppSettings, PasswordResetToken },
+models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp, RefreshToken, AppSettings, PasswordResetToken, Dispute, DisputeReply },
 };

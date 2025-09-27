@@ -1116,6 +1116,279 @@
       ]
     },
     {
+      "name": "Dispute Management",
+      "item": [
+        {
+          "name": "Passenger Disputes",
+          "item": [
+            {
+              "name": "Create Dispute",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"complaint\",\n  \"category\": \"driver_behavior\",\n  \"priority\": \"medium\",\n  \"title\": \"Driver was rude and unprofessional\",\n  \"description\": \"The driver was very rude and used inappropriate language during the ride. He also took a longer route without asking.\",\n  \"respondentType\": \"driver\",\n  \"respondentId\": 1,\n  \"rideId\": 123,\n  \"attachments\": [],\n  \"tags\": [\"rude\", \"unprofessional\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/disputes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes"]
+                }
+              }
+            },
+            {
+              "name": "Get My Disputes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/disputes?page=1&limit=10&status=open",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "10" },
+                    { "key": "status", "value": "open" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Dispute Details",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/disputes/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes", "1"]
+                }
+              }
+            },
+            {
+              "name": "Add Reply to Dispute",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"message\": \"I would like to add more details about the incident. The driver also refused to help with my luggage.\",\n  \"attachments\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/disputes/1/replies",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes", "1", "replies"]
+                }
+              }
+            },
+            {
+              "name": "Close Dispute",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"closed\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/disputes/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes", "1", "status"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver Disputes",
+          "item": [
+            {
+              "name": "Create Dispute",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"complaint\",\n  \"category\": \"passenger_behavior\",\n  \"priority\": \"high\",\n  \"title\": \"Passenger damaged my vehicle\",\n  \"description\": \"The passenger intentionally damaged the interior of my car and refused to pay for repairs.\",\n  \"respondentType\": \"passenger\",\n  \"respondentId\": 1,\n  \"rideId\": 123,\n  \"attachments\": [],\n  \"tags\": [\"damage\", \"vandalism\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/disputes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes"]
+                }
+              }
+            },
+            {
+              "name": "Get My Disputes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/disputes?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "10" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Dispute Details",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/disputes/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes", "1"]
+                }
+              }
+            },
+            {
+              "name": "Add Reply to Dispute",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"message\": \"I have photos of the damage and repair receipts to support my claim.\",\n  \"attachments\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/disputes/1/replies",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["disputes", "1", "replies"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Dispute Management",
+          "item": [
+            {
+              "name": "Get All Disputes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes?page=1&limit=20&status=open",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" },
+                    { "key": "status", "value": "open" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Dispute Statistics",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes/stats?period=30",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes", "stats"],
+                  "query": [
+                    { "key": "period", "value": "30" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Dispute Details (Admin)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes", "1"]
+                }
+              }
+            },
+            {
+              "name": "Assign Dispute to Admin",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"assignedAdminId\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes/1/assign",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes", "1", "assign"]
+                }
+              }
+            },
+            {
+              "name": "Update Dispute Status",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"in_progress\",\n  \"priority\": \"high\",\n  \"resolution\": \"Investigation in progress. Driver has been contacted for their side of the story.\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes/1/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes", "1", "status"]
+                }
+              }
+            },
+            {
+              "name": "Add Admin Reply",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"message\": \"Thank you for reporting this issue. We have contacted the driver and are investigating the matter. We will provide an update within 24 hours.\",\n  \"internalNotes\": \"Driver has been temporarily suspended pending investigation\",\n  \"statusChange\": \"in_progress\",\n  \"attachments\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/disputes/1/replies",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "disputes", "1", "replies"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "App Settings",
       "item": [
         {
