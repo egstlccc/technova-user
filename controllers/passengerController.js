@@ -65,6 +65,22 @@ return res.json(updated);
 } catch (e) { return res.status(500).json({ message: e.message }); }
 };
 
+// Passenger: change password (authenticated)
+exports.changeMyPassword = async (req, res) => {
+try {
+const { currentPassword, newPassword } = req.body || {};
+if (!currentPassword || !newPassword) return res.status(400).json({ message: 'currentPassword and newPassword are required' });
+const passenger = await models.Passenger.unscoped().findByPk(req.user.id);
+if (!passenger) return res.status(404).json({ message: 'Passenger not found' });
+const { comparePassword, hashPassword } = require('../utils/password');
+const ok = await comparePassword(currentPassword, passenger.password);
+if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
+const hashed = await hashPassword(newPassword);
+await models.Passenger.update({ password: hashed }, { where: { id: passenger.id } });
+return res.json({ message: 'Password changed successfully' });
+} catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
 exports.deleteMyAccount = async (req, res) => {
 try {
 // Authorize by confirming the token belongs to an existing passenger

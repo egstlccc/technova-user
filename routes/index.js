@@ -11,6 +11,7 @@ router.use('/permissions', require('./permissionRoutes'));
 router.use('/admins', require('./adminRoutes'));
 // Backward-compatible alias: expose admin routes under singular prefix as well
 router.use('/admin', require('./adminRoutes'));
+router.use('/settings', require('./settingsRoutes'));
 // v1 passenger OTP routes removed; use /auth/request-otp and /auth/verify-otp
 
 

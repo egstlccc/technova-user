@@ -1,5 +1,5 @@
 const { models } = require('../models');
-const { generateToken } = require('../utils/jwt');
+const { generateAccessToken, issueRefreshToken, rotateRefreshToken } = require('../utils/jwt');
 const { hashPassword } = require('../utils/password');
 const createAdvancedOtpUtil = require('../utils/createAdvancedOtpUtil');
 
@@ -161,17 +161,16 @@ async function verifyOtp(req, res) {
         phoneNumber: normalizedPhone
       });
 
-      // Generate JWT token for Passenger
-      const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+      // Generate access + refresh tokens for Passenger
+      const access_token = generateAccessToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+      const { token: refresh_token } = await issueRefreshToken({ userType: 'passenger', userId: passenger.id });
 
       return res.status(200).json({
         success: true,
         message: 'OTP verified successfully. Account activated.',
-        passenger: {
-          id: passenger.id,
-          phone: passenger.phone
-        },
-        token
+        passenger: { id: passenger.id, phone: passenger.phone },
+        access_token,
+        refresh_token
       });
     } catch (otpError) {
       // Handle OTP verification errors
@@ -244,17 +243,11 @@ async function loginWithPhone(req, res) {
       });
     }
 
-    // Generate JWT token for Passenger
-    const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
-
+    // Do not issue new tokens at login; tokens are issued at OTP verification
     return res.status(200).json({
       success: true,
-      message: 'Login successful',
-      passenger: {
-        id: passenger.id,
-        phone: passenger.phone
-      },
-      token
+      message: 'Login successful. Use tokens obtained during OTP verification.',
+      passenger: { id: passenger.id, phone: passenger.phone }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -344,14 +337,53 @@ async function verifyPassengerOtpRedirect(req, res) {
       phoneNumber: normalizedPhone
     });
 
-    const token = generateToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
-    const redirectUrl = '/api/passengers/profile/me?token=' + encodeURIComponent(token);
+    const access_token = generateAccessToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+    const { token: refresh_token } = await issueRefreshToken({ userType: 'passenger', userId: passenger.id });
+    const redirectUrl = '/api/passengers/profile/me?token=' + encodeURIComponent(access_token);
     res.set('Location', redirectUrl);
-    return res.status(302).json({ success: true, message: 'Verified', redirect: redirectUrl, token, passenger: { id: passenger.id, phone: passenger.phone } });
+    return res.status(302).json({ success: true, message: 'Verified', redirect: redirectUrl, access_token, refresh_token, passenger: { id: passenger.id, phone: passenger.phone } });
   } catch (error) {
     const message = error && error.message ? error.message : 'Verification failed';
     const status = /expired|Invalid|No valid/i.test(message) ? 400 : 500;
     return res.status(status).json({ success: false, message });
+  }
+}
+
+/**
+ * Exchange refresh token for a new access token (and rotate refresh token)
+ * POST /auth/refresh-token
+ */
+async function refreshAccessToken(req, res) {
+  try {
+    const { refresh_token } = req.body || {};
+    if (!refresh_token) return res.status(400).json({ success: false, message: 'refresh_token is required' });
+
+    // Only Passenger per current requirement
+    // Attempt to find matching active refresh token for any passenger by comparing hashed tokens
+    // We need user context; rotateRefreshToken requires userType and userId, but we must discover them
+    // Search passenger tokens and compare
+    const all = await models.RefreshToken.findAll({ where: { userType: 'passenger', revokedAt: null } });
+    let matched = null;
+    for (const rt of all) {
+      const bcrypt = require('bcryptjs');
+      const ok = await bcrypt.compare(refresh_token, rt.hashedToken);
+      if (ok) { matched = rt; break; }
+    }
+    if (!matched) return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    if (new Date(matched.expiresAt) < new Date()) return res.status(401).json({ success: false, message: 'Refresh token expired' });
+
+    // Rotate
+    const rotated = await rotateRefreshToken({ token: refresh_token, userType: 'passenger', userId: matched.userId });
+    if (!rotated) return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+
+    const passenger = await models.Passenger.findByPk(matched.userId);
+    if (!passenger) return res.status(404).json({ success: false, message: 'Passenger not found' });
+
+    const access_token = generateAccessToken({ id: passenger.id, type: 'passenger', roles: [], permissions: [] });
+    return res.status(200).json({ success: true, access_token, refresh_token: rotated.newToken });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
 
@@ -361,5 +393,6 @@ module.exports = {
   loginWithPhone,
   getUserProfile,
   registerPassengerByPhone,
-  verifyPassengerOtpRedirect
+  verifyPassengerOtpRedirect,
+  refreshAccessToken
 };

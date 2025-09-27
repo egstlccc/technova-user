@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/passengerController');
 const auth = require('../middleware/auth');
@@ -14,6 +14,7 @@ router.delete('/:id', auth(), requirePermissions('passenger:delete'), ctrl.remov
 // Passenger self-control routes
 router.get('/profile/me', auth(), ctrl.getMyProfile);
 router.put('/profile/me', auth(), ctrl.updateMyProfile);
+router.post('/profile/me/change-password', auth(), ctrl.changeMyPassword);
 router.delete('/profile/me', auth(), ctrl.deleteMyAccount);
 
 // Passenger action: rate driver

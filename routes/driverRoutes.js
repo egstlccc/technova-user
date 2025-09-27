@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/driverController');
 const auth = require('../middleware/auth');
@@ -43,6 +43,7 @@ router.delete('/:id', auth(), requirePermissions('driver:delete'), ctrl.remove);
 
 // Driver self-control routes
 router.get('/profile/me', auth(), ctrl.getMyProfile);
+router.post('/profile/me/change-password', auth(), ctrl.changeMyPassword);
 router.put('/profile/me', auth(), ctrl.updateMyProfile);
 router.get('/booking-eligibility', auth(), ctrl.checkBookingEligibility);
 router.post('/profile/me/toggle-availability', auth(), ctrl.toggleMyAvailability);
