@@ -14,6 +14,7 @@ router.use('/admin', require('./adminRoutes'));
 router.use('/settings', require('./settingsRoutes'));
 router.use('/disputes', require('./disputeRoutes'));
 router.use('/admin/disputes', require('./adminDisputeRoutes'));
+router.use('/bookings', require('./bookingRoutes'));
 // v1 passenger OTP routes removed; use /auth/request-otp and /auth/verify-otp
 
 

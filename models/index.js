@@ -13,6 +13,7 @@ const AppSettingsModel = require('./appSettings');
 const PasswordResetTokenModel = require('./passwordResetToken');
 const DisputeModel = require('./dispute');
 const DisputeReplyModel = require('./disputeReply');
+const BookingModel = require('./booking');
 
 const Passenger = PassengerModel(sequelize, DataTypes);
 const Driver = DriverModel(sequelize, DataTypes);
@@ -26,6 +27,7 @@ const AppSettings = AppSettingsModel(sequelize, DataTypes);
 const PasswordResetToken = PasswordResetTokenModel(sequelize, DataTypes);
 const Dispute = DisputeModel(sequelize, DataTypes);
 const DisputeReply = DisputeReplyModel(sequelize, DataTypes);
+const Booking = BookingModel(sequelize, DataTypes);
 
 // Roles and permissions (explicit FK names to match existing schema)
 Role.belongsToMany(Permission, {
@@ -168,5 +170,5 @@ sequelize,
 Sequelize,
 DataTypes,
 Op,
-models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp, RefreshToken, AppSettings, PasswordResetToken, Dispute, DisputeReply },
+models: { Passenger, Driver, Staff, Role, Permission, Admin, Otp, RefreshToken, AppSettings, PasswordResetToken, Dispute, DisputeReply, Booking },
 };
