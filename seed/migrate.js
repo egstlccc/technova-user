@@ -209,6 +209,54 @@ async function migrate() {
       console.log('Skipping removing rating_count from drivers:', error.message);
     }
 
+    // Create bookings table if it does not exist
+    try {
+      const qi = sequelize.getQueryInterface();
+      const tables = await qi.showAllTables();
+      const tableNames = Array.isArray(tables)
+        ? tables.map(t => (typeof t === 'object' ? t.tableName || t.table_name : t))
+        : [];
+      const hasBookings = tableNames.includes('bookings');
+      if (!hasBookings) {
+        await qi.createTable('bookings', {
+          id: { type: DataTypes.STRING, primaryKey: true },
+          passenger_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'passengers', key: 'id' },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
+          },
+          driver_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'drivers', key: 'id' },
+            onUpdate: 'SET NULL',
+            onDelete: 'SET NULL'
+          },
+          status: {
+            type: DataTypes.ENUM('requested', 'accepted', 'assigned', 'picked_up', 'completed', 'cancelled'),
+            allowNull: false,
+            defaultValue: 'requested'
+          },
+          vehicle_type: { type: DataTypes.ENUM('mini', 'sedan', 'van'), allowNull: false },
+          pickup_latitude: { type: DataTypes.DECIMAL(10, 6), allowNull: false },
+          pickup_longitude: { type: DataTypes.DECIMAL(10, 6), allowNull: false },
+          pickup_address: { type: DataTypes.STRING, allowNull: true },
+          dropoff_latitude: { type: DataTypes.DECIMAL(10, 6), allowNull: false },
+          dropoff_longitude: { type: DataTypes.DECIMAL(10, 6), allowNull: false },
+          dropoff_address: { type: DataTypes.STRING, allowNull: true },
+          created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+          updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
+        });
+        console.log('Created bookings table');
+      } else {
+        console.log('bookings table already exists');
+      }
+    } catch (error) {
+      console.error('Error creating bookings table:', error.message);
+    }
+
     console.log('Migration completed successfully!');
     process.exit(0);
   } catch (error) {
