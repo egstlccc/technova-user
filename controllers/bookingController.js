@@ -72,3 +72,28 @@ return res.json({ success: true, booking });
 } catch (e) { return res.status(500).json({ message: e.message }); }
 };
 
+exports.cancel = async (req, res) => {
+try {
+const { id } = req.params;
+const booking = await models.Booking.findByPk(id);
+if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+// Only requester (passenger) or assigned driver can cancel depending on state
+if (req.user.type === 'passenger') {
+  if (booking.passengerId !== req.user.id) return res.status(403).json({ message: 'Not allowed to cancel this booking' });
+} else if (req.user.type === 'driver') {
+  if (booking.driverId !== req.user.id) return res.status(403).json({ message: 'Not allowed to cancel this booking' });
+} else {
+  return res.status(403).json({ message: 'Unauthorized' });
+}
+
+if (booking.status === 'completed') return res.status(409).json({ message: 'Cannot cancel a completed booking' });
+if (booking.status === 'cancelled') return res.json({ success: true, booking });
+
+booking.status = 'cancelled';
+await booking.save();
+
+return res.json({ success: true, booking });
+} catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
